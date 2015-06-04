@@ -60,7 +60,7 @@ public class ModulesExampleActivity extends Activity {
         // also be modules from libraries. This Realm contains the following classes: { Cow, Pig, Cat, Dog }
         RealmConfiguration farmAnimalsConfig = new RealmConfiguration.Builder(this)
                 .name("farm.realm")
-                .addModule(new DomesticAnimalsModule())
+                .setModules(Realm.getDefaultModule(), new DomesticAnimalsModule())
                 .build();
 
         // Or you can completely replace the default schema.

@@ -10,7 +10,7 @@ include ':introExample',
         ':threadExample',
 		':jsonExample',
         ':realmModuleAppExample',
-        ':realmModuleLibraryExample'
+        ':realmModuleLibraryExample',
         ':kotlinExample'
 
 project(':introExample').projectDir = new File('examples/introExample')
