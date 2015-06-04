@@ -122,7 +122,7 @@ import io.realm.internal.migration.SetVersionNumberMigration;
 public final class Realm implements Closeable {
     public static final String DEFAULT_REALM_NAME = "default.realm";
 
-    protected static final ThreadLocal<Map<RealmConfiguration, Realm>> threadLocalRealmCache =
+    protected static final ThreadLocal<Map<RealmConfiguration, Realm>> realmsCache =
             new ThreadLocal<Map<RealmConfiguration, Realm>>() {
         @Override
         protected Map<RealmConfiguration, Realm> initialValue() {
@@ -130,7 +130,7 @@ public final class Realm implements Closeable {
         }
     };
 
-    private static final ThreadLocal<Map<RealmConfiguration, Integer>> threadLocalReferenceCount =
+    private static final ThreadLocal<Map<RealmConfiguration, Integer>> referenceCount =
             new ThreadLocal<Map<RealmConfiguration,Integer>>() {
         @Override
         protected Map<RealmConfiguration, Integer> initialValue() {
@@ -183,7 +183,7 @@ public final class Realm implements Closeable {
         }
 
         // Check if we are in the right thread
-        Realm currentRealm = threadLocalRealmCache.get().get(configuration);
+        Realm currentRealm = realmsCache.get().get(configuration);
         if (currentRealm != this) {
             throw new IllegalStateException(INCORRECT_THREAD_MESSAGE);
         }
@@ -216,14 +216,14 @@ public final class Realm implements Closeable {
      */
     @Override
     public void close() {
-        Map<RealmConfiguration, Integer> localRefCount = threadLocalReferenceCount.get();
+        Map<RealmConfiguration, Integer> localRefCount = referenceCount.get();
         String canonicalPath = configuration.getPath();
         Integer references = localRefCount.get(configuration);
         if (references == null) {
             references = 0;
         }
         if (sharedGroup != null && references == 1) {
-            threadLocalRealmCache.get().remove(configuration);
+            realmsCache.get().remove(configuration);
             globalPathConfigurationCache.get(canonicalPath).remove(configuration);
             sharedGroup.close();
             sharedGroup = null;
@@ -545,12 +545,12 @@ public final class Realm implements Closeable {
 
         // Check if a cached instance already exists for this thread
         String canonicalPath = configuration.getPath();
-        Map<RealmConfiguration, Integer> localRefCount = threadLocalReferenceCount.get();
+        Map<RealmConfiguration, Integer> localRefCount = referenceCount.get();
         Integer references = localRefCount.get(configuration);
         if (references == null) {
             references = 0;
         }
-        Map<RealmConfiguration, Realm> realms = threadLocalRealmCache.get();
+        Map<RealmConfiguration, Realm> realms = realmsCache.get();
         Realm realm = realms.get(configuration);
         if (realm != null) {
             localRefCount.put(configuration, references + 1);
@@ -1620,7 +1620,7 @@ public final class Realm implements Closeable {
         realm.commitTransaction();
         realm.close();
 
-        threadLocalRealmCache.remove();
+        realmsCache.remove();
     }
 
     /**
