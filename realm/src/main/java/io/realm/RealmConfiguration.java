@@ -121,11 +121,11 @@ public class RealmConfiguration {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
 
-        RealmConfiguration that = (RealmConfiguration) o;
+        RealmConfiguration that = (RealmConfiguration) obj;
 
         if (schemaVersion != that.schemaVersion) return false;
         if (deleteRealmIfMigrationNeeded != that.deleteRealmIfMigrationNeeded) return false;
@@ -135,7 +135,6 @@ public class RealmConfiguration {
         if (!Arrays.equals(key, that.key)) return false;
         if (migration != null ? !migration.equals(that.migration) : that.migration != null) return false;
         return schemaMediator.equals(that.schemaMediator);
-
     }
 
     @Override
