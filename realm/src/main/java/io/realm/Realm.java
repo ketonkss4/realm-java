@@ -138,7 +138,7 @@ public final class Realm implements Closeable {
         }
     };
 
-    // Map between all Realm file path and all known configurations pointing to that file.
+    // Map between all Realm file paths and all known configurations pointing to that file.
     private static final Map<String, List<RealmConfiguration>> globalPathConfigurationCache =
             new HashMap<String, List<RealmConfiguration>>();
 
