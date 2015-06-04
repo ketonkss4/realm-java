@@ -23,6 +23,7 @@ import java.util.Random;
 
 import io.realm.entities.AllTypes;
 import io.realm.entities.AllTypesPrimaryKey;
+import io.realm.entities.CyclicType;
 import io.realm.entities.Dog;
 import io.realm.entities.Owner;
 import io.realm.exceptions.RealmMigrationNeededException;
@@ -104,10 +105,17 @@ public class RealmConfigurationTest extends AndroidTestCase {
     }
 
     public void testWrongKeyLengthThrows() {
-        try {
-            new RealmConfiguration.Builder(getContext()).encryptionKey(new byte[63]).build();
-            fail();
-        } catch (IllegalArgumentException expected) {
+        byte[][] wrongKeys = new byte[][] {
+                new byte[0],
+                new byte[RealmConfiguration.KEY_LENGTH - 1],
+                new byte[RealmConfiguration.KEY_LENGTH + 1]
+        };
+        for (byte[] key : wrongKeys) {
+            try {
+                new RealmConfiguration.Builder(getContext()).encryptionKey(key).build();
+                fail("Key with length " + key.length + " should throw an exception");
+            } catch (IllegalArgumentException expected) {
+            }
         }
     }
 
@@ -123,10 +131,13 @@ public class RealmConfigurationTest extends AndroidTestCase {
         realm = Realm.getInstance(new RealmConfiguration.Builder(getContext()).schemaVersion(42).build());
         realm.close();
 
-        try {
-            Realm.getInstance(new RealmConfiguration.Builder(getContext()).schemaVersion(1).build());
-            fail();
-        } catch (IllegalArgumentException expected) {
+        int[] wrongVersions = new int[] { 0, 1, 41 };
+        for (int version : wrongVersions) {
+            try {
+                Realm.getInstance(new RealmConfiguration.Builder(getContext()).schemaVersion(version).build());
+                fail("Version " + version + " should throw an exception");
+            } catch (IllegalArgumentException expected) {
+            }
         }
     }
 
@@ -162,28 +173,6 @@ public class RealmConfigurationTest extends AndroidTestCase {
         }
     }
 
-    public void testAddModuleNullThrows() {
-        try {
-            new RealmConfiguration.Builder(getContext()).addModule(null);
-            fail();
-        } catch (IllegalArgumentException expected) {
-        }
-    }
-
-    public void testAddModuleNonRealmModuleThrows() {
-        try {
-            new RealmConfiguration.Builder(getContext()).addModule(new Object());
-            fail();
-        } catch (IllegalArgumentException expected) {
-        }
-    }
-
-    public void testAddModule() {
-        RealmConfiguration realmConfig = new RealmConfiguration.Builder(getContext()).addModule(new DefaultRealmModule()).build();
-        realm = Realm.getInstance(realmConfig);
-        assertNotNull(realm.getTable(AllTypes.class));
-    }
-
     public void testSetModulesNullThrows() {
         // Test first argument
         try {
@@ -194,7 +183,7 @@ public class RealmConfigurationTest extends AndroidTestCase {
 
         // Test second argument
         try {
-            new RealmConfiguration.Builder(getContext()).setModules(new DefaultRealmModule(), null, null);
+            new RealmConfiguration.Builder(getContext()).setModules(Realm.getDefaultModule(), null, null);
             fail();
         } catch (IllegalArgumentException expected) {
         }
@@ -210,14 +199,14 @@ public class RealmConfigurationTest extends AndroidTestCase {
 
         // Test second argument
         try {
-            new RealmConfiguration.Builder(getContext()).setModules(new DefaultRealmModule(), new Object());
+            new RealmConfiguration.Builder(getContext()).setModules(Realm.getDefaultModule(), new Object());
             fail();
         } catch (IllegalArgumentException expected) {
         }
     }
 
     public void testSetModules() {
-        RealmConfiguration realmConfig = new RealmConfiguration.Builder(getContext()).addModule(new DefaultRealmModule()).build();
+        RealmConfiguration realmConfig = new RealmConfiguration.Builder(getContext()).setModules(Realm.getDefaultModule()).build();
         realm = Realm.getInstance(realmConfig);
         assertNotNull(realm.getTable(AllTypes.class));
     }
@@ -284,5 +273,70 @@ public class RealmConfigurationTest extends AndroidTestCase {
 
         // Version upgrades should happen automatically if possible
         realm = Realm.getInstance(new RealmConfiguration.Builder(getContext()).schemaVersion(42).build());
+    }
+
+    public void testEquals() {
+        RealmConfiguration config1 = new RealmConfiguration.Builder(getContext()).build();
+        RealmConfiguration config2 = new RealmConfiguration.Builder(getContext()).build();
+        assertTrue(config1.equals(config2));
+    }
+
+    public void testHashCode() {
+        RealmConfiguration config1 = new RealmConfiguration.Builder(getContext()).build();
+        RealmConfiguration config2 = new RealmConfiguration.Builder(getContext()).build();
+        assertEquals(config1.hashCode(), config2.hashCode());
+    }
+
+    public void testEqualConfigurationsReturnCachedRealm() {
+        Realm realm1 = Realm.getInstance(getContext());
+        Realm realm2 = Realm.getInstance(getContext());
+        try {
+            assertEquals(realm1, realm2);
+        } finally {
+            realm1.close();
+            realm2.close();
+        }
+    }
+
+    public void testDifferentVersionsThrows() {
+        RealmConfiguration config1 = new RealmConfiguration.Builder(getContext()).schemaVersion(1).build();
+        RealmConfiguration config2 = new RealmConfiguration.Builder(getContext()).schemaVersion(2).build();
+
+        Realm realm1 = Realm.getInstance(config1);
+        try {
+            Realm.getInstance(config2);
+            fail();
+        } catch (IllegalArgumentException expected) {
+        } finally {
+            realm1.close();
+        }
+    }
+
+    public void testDifferentEncryptionKeysThrows() {
+        RealmConfiguration config1 = new RealmConfiguration.Builder(getContext()).encryptionKey(TestHelper.getRandomKey()).build();
+        RealmConfiguration config2 = new RealmConfiguration.Builder(getContext()).encryptionKey(TestHelper.getRandomKey()).build();
+
+        Realm realm1 = Realm.getInstance(config1);
+        try {
+            Realm.getInstance(config2);
+            fail();
+        } catch (IllegalArgumentException expected) {
+        } finally {
+            realm1.close();
+        }
+    }
+
+    public void testDifferentSchemasThrows() {
+        RealmConfiguration config1 = new RealmConfiguration.Builder(getContext()).schema(AllTypes.class).build();
+        RealmConfiguration config2 = new RealmConfiguration.Builder(getContext()).schema(CyclicType.class).build();
+
+        Realm realm1 = Realm.getInstance(config1);
+        try {
+            Realm.getInstance(config2);
+            fail();
+        } catch (IllegalArgumentException expected) {
+        } finally {
+            realm1.close();
+        }
     }
 }

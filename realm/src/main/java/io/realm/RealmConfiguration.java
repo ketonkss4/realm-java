@@ -19,11 +19,15 @@ package io.realm;
 import android.content.Context;
 
 import java.io.File;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import io.realm.annotations.RealmModule;
 import io.realm.exceptions.RealmException;
@@ -51,10 +55,12 @@ import io.realm.internal.modules.FilterableMediator;
  */
 public class RealmConfiguration {
 
+    public static final int KEY_LENGTH = 64;
+
     private static final Object DEFAULT_MODULE;
     private static final RealmProxyMediator DEFAULT_MODULE_MEDIATOR;
     static {
-        DEFAULT_MODULE = getDefaultModule();
+        DEFAULT_MODULE = Realm.getDefaultModule();
         if (DEFAULT_MODULE != null) {
             DEFAULT_MODULE_MEDIATOR = getModuleMediator(DEFAULT_MODULE.getClass().getCanonicalName());
         } else {
@@ -114,6 +120,36 @@ public class RealmConfiguration {
         return canonicalPath;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+
+        RealmConfiguration that = (RealmConfiguration) obj;
+
+        if (schemaVersion != that.schemaVersion) return false;
+        if (deleteRealmIfMigrationNeeded != that.deleteRealmIfMigrationNeeded) return false;
+        if (!realmFolder.equals(that.realmFolder)) return false;
+        if (!realmFileName.equals(that.realmFileName)) return false;
+        if (!canonicalPath.equals(that.canonicalPath)) return false;
+        if (!Arrays.equals(key, that.key)) return false;
+        if (migration != null ? !migration.equals(that.migration) : that.migration != null) return false;
+        return schemaMediator.equals(that.schemaMediator);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = realmFolder.hashCode();
+        result = 31 * result + realmFileName.hashCode();
+        result = 31 * result + canonicalPath.hashCode();
+        result = 31 * result + (key != null ? Arrays.hashCode(key) : 0);
+        result = 31 * result + schemaVersion;
+        result = 31 * result + (migration != null ? migration.hashCode() : 0);
+        result = 31 * result + (deleteRealmIfMigrationNeeded ? 1 : 0);
+        result = 31 * result + schemaMediator.hashCode();
+        return result;
+    }
+
     // Creates the mediator that defines the current schema
     private RealmProxyMediator createSchemaMediator(Builder builder) {
 
@@ -136,26 +172,6 @@ public class RealmConfiguration {
             mediator.addMediator(getModuleMediator(module.getClass().getCanonicalName()));
         }
         return mediator;
-    }
-
-    // Finds the default module (if there is one)
-    private static Object getDefaultModule() {
-        String moduleName = "io.realm.DefaultRealmModule";
-        Class<?> clazz;
-        try {
-            clazz = Class.forName(moduleName);
-            Constructor<?> constructor = clazz.getDeclaredConstructors()[0];
-            constructor.setAccessible(true);
-            return constructor.newInstance();
-        } catch (ClassNotFoundException e) {
-            return null;
-        } catch (InvocationTargetException e) {
-            throw new RealmException("Could not create an instance of " + moduleName, e);
-        } catch (InstantiationException e) {
-            throw new RealmException("Could not create an instance of " + moduleName, e);
-        } catch (IllegalAccessException e) {
-            throw new RealmException("Could not create an instance of " + moduleName, e);
-        }
     }
 
     // Finds the mediator associated with a given module
@@ -190,7 +206,6 @@ public class RealmConfiguration {
         private int schemaVersion;
         private RealmMigration migration;
         private boolean deleteRealmIfMigrationNeeded;
-        private boolean resetRealmBeforeOpening;
         private HashSet<Object> modules = new HashSet<Object>();
         private HashSet<Class<? extends RealmObject>> debugSchema = new HashSet<Class<? extends RealmObject>>();
 
@@ -238,7 +253,6 @@ public class RealmConfiguration {
             this.schemaVersion = 0;
             this.migration = null;
             this.deleteRealmIfMigrationNeeded = false;
-            this.resetRealmBeforeOpening = false;
             if (DEFAULT_MODULE != null) {
                 this.modules.add(DEFAULT_MODULE);
             }
@@ -263,8 +277,9 @@ public class RealmConfiguration {
             if (key == null) {
                 throw new IllegalArgumentException("A non-null key must be provided");
             }
-            if (key.length != 64) {
-                throw new IllegalArgumentException("The provided key must be 64 bytes. Yours was: " + key.length);
+            if (key.length != KEY_LENGTH) {
+                throw new IllegalArgumentException(String.format("The provided key must be %s bytes. Yours was: %s",
+                        KEY_LENGTH, key.length));
             }
             this.key = key;
             return this;
@@ -312,29 +327,21 @@ public class RealmConfiguration {
         }
 
         /**
-         * Add a {@link RealmModule}s to the existing modules. RealmClasses in the new module is added to the schema
-         * for this Realm.
-         *
-         * @param module {@link RealmModule} to add to this Realms schema.
-         *
-         * @throws {@link IllegalArgumentException} if module is {@code null} or doesn't have the {@link RealmModule}
-         * annotation.
-         */
-        public Builder addModule(Object module) {
-            checkModule(module);
-            modules.add(module);
-            return this;
-        }
-
-        /**
-         * Replace the existing module(s) with one or more {@link RealmModule}s. Using this method will replace the
+         * Replaces the existing module(s) with one or more {@link RealmModule}s. Using this method will replace the
          * current schema for this Realm with the schema defined by the provided modules.
          *
-         * @param baseModule
-         * @param additionalModules
+         * A reference to the default Realm module containing all Realm classes in the project (but not dependencies),
+         * can be found using {@link Realm#getDefaultModule()}. Combining the schema from the app project and a library
+         * dependency is thus done using the following code:
+         *
+         * {@code builder.setModules(Realm.getDefaultMode(), new MyLibraryModule()); }
+         *
+         * @param baseModule        First Realm module (required).
+         * @param additionalModules Additional Realm modules
          *
          * @throws {@link IllegalArgumentException} if any of the modules are {@code null} or doesn't have the
          * {@link RealmModule} annotation.
+         * @see Realm#getDefaultModule()
          */
         public Builder setModules(Object baseModule, Object... additionalModules) {
             modules.clear();
@@ -347,6 +354,11 @@ public class RealmConfiguration {
                 }
             }
             return this;
+        }
+
+        private void addModule(Object module) {
+            checkModule(module);
+            modules.add(module);
         }
 
         /**
