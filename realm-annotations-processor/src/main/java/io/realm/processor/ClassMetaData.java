@@ -16,7 +16,6 @@
 
 package io.realm.processor;
 
-import java.lang.System;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
