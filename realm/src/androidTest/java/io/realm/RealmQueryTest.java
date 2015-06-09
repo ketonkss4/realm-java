@@ -470,15 +470,15 @@ public class RealmQueryTest extends AndroidTestCase{
             @Override
             public void onChange() {
                 results = results.where().notEqualTo("name", "asdfas" + count).findAll();
-                for (int i=0; i<count; i++) {
+                for (int i = 0; i < count; i++) {
                     CatOwner catOwner = results.get(i);
-                    assertEquals(catOwner.getName(), "catOwner"+i);
+                    assertEquals(catOwner.getName(), "catOwner" + i);
                 }
                 System.gc(); // if a native resource has a reference count = 0, doing GC here might lead to a crash
             }
         };
         testRealm.addChangeListener(listener);
-        for (int i=1; i<=count; i++) {
+        for (int i = 1; i <= count; i++) {
             doTestModifyRealmList(count);
         }
     }
@@ -486,7 +486,7 @@ public class RealmQueryTest extends AndroidTestCase{
     private void doTestModifyRealmList(final int count) {
         final RealmResults<CatOwner> results = testRealm.where(CatOwner.class).findAll();
         testRealm.beginTransaction();
-        for (int i=0; i<count; i++) {
+        for (int i = 0; i < count; i++) {
             CatOwner catOwner = testRealm.createObject(CatOwner.class);
             catOwner.setName("catOwner" + i);
         }
