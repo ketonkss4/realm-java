@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Realm Inc.
+ * Copyright 2015 Realm Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.realm.internal;
 
-package io.realm.examples.service.model;
-
-import io.realm.RealmObject;
-
-public class Dog extends RealmObject {
-    private String name;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public String toString() {
-        return "Dog{" +
-                "name='" + name + '\'' +
-                '}';
-    }
+/**
+ * This abstract class represents a native object from core.
+ * It specifies the operations common to all such objects.
+ * All Java classes wrapping a core class should extend NativeObject.
+ */
+public abstract class NativeObject {
+    long nativePointer;
 }
