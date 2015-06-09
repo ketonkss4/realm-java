@@ -991,8 +991,7 @@ public class Table implements TableOrView, TableSchema, Closeable {
 
 
     public Row getRow(long index) {
-        long nativeRowPtr = nativeGetRowPtr(nativePtr, index);
-        return new Row(context, this, nativeRowPtr);
+        return Row.get(context, this, index);
     }
 
     protected native long nativeGetRowPtr(long nativePtr, long index);
@@ -1433,6 +1432,9 @@ public class Table implements TableOrView, TableSchema, Closeable {
 
     @Override
     public long findFirstDate(long columnIndex, Date date) {
+        if (date == null) {
+            throw new IllegalArgumentException("null is not supported");
+        }
         return nativeFindFirstDate(nativePtr, columnIndex, date.getTime() / 1000);
     }
 
@@ -1440,6 +1442,9 @@ public class Table implements TableOrView, TableSchema, Closeable {
 
     @Override
     public long findFirstString(long columnIndex, String value) {
+        if (value == null) {
+            throw new IllegalArgumentException("null is not supported");
+        }
         return nativeFindFirstString(nativePtr, columnIndex, value);
     }
 

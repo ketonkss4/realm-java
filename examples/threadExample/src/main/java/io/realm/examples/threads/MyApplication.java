@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-package io.realm.internal.migration;
+package io.realm.examples.threads;
+
+import android.app.Application;
 
 import io.realm.Realm;
-import io.realm.RealmMigration;
+import io.realm.RealmConfiguration;
 
-/**
- * Utility migration for automatically upgrading the version number of a Realm.
- */
-public class SetVersionNumberMigration implements RealmMigration {
-
-    private final int newVersion;
-
-    public SetVersionNumberMigration(int newVersion) {
-        this.newVersion = newVersion;
-    }
+public class MyApplication extends Application {
 
     @Override
-    public long execute(Realm realm, long version) {
-        return newVersion;
+    public void onCreate() {
+        super.onCreate();
+
+        // Configure Realm for the application
+        RealmConfiguration realmConfiguration = new RealmConfiguration.Builder(this).build();
+        Realm.deleteRealm(realmConfiguration); // Clean slate
+        Realm.setDefaultConfiguration(realmConfiguration); // Make this Realm the default
     }
 }
