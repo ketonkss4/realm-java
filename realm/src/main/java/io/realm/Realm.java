@@ -65,7 +65,6 @@ import io.realm.internal.android.ReleaseAndroidLogger;
 import io.realm.internal.log.RealmLog;
 import io.realm.internal.migration.SetVersionNumberMigration;
 
-
 /**
  * The Realm class is the storage and transactional manager of your object persistent store. It
  * is in charge of creating instances of your RealmObjects. Objects within a Realm can be queried
@@ -122,6 +121,7 @@ import io.realm.internal.migration.SetVersionNumberMigration;
 public final class Realm implements Closeable {
     public static final String DEFAULT_REALM_NAME = "default.realm";
 
+
     protected static final ThreadLocal<Map<RealmConfiguration, Realm>> realmsCache =
             new ThreadLocal<Map<RealmConfiguration, Realm>>() {
         @Override
@@ -161,7 +161,7 @@ public final class Realm implements Closeable {
     private boolean autoRefresh;
     private Handler handler;
 
-    private RealmConfiguration configuration;
+    private final RealmConfiguration configuration;
     private SharedGroup sharedGroup;
     private final ImplicitTransaction transaction;
 
@@ -385,7 +385,7 @@ public final class Realm implements Closeable {
      * <p>
      * It sets auto-refresh on if the current thread has a Looper, off otherwise.
      *
-     * @param writeableFolder a File object representing a writeable folder
+     * @param writableFolder a File object representing a writable folder
      * @return an instance of the Realm class
      * @throws RealmMigrationNeededException The model classes have been changed and the Realm
      *                                       must be migrated
@@ -394,8 +394,8 @@ public final class Realm implements Closeable {
      */
     @Deprecated
     @SuppressWarnings("UnusedDeclaration")
-    public static Realm getInstance(File writeableFolder) {
-        return create(new RealmConfiguration.Builder(writeableFolder)
+    public static Realm getInstance(File writableFolder) {
+        return create(new RealmConfiguration.Builder(writableFolder)
                         .name(DEFAULT_REALM_NAME)
                         .build()
         );
@@ -406,7 +406,7 @@ public final class Realm implements Closeable {
      * {@link #close()}
      * It sets auto-refresh on if the current thread has a Looper, off otherwise.
      *
-     * @param writeableFolder a File object representing a writeable folder
+     * @param writableFolder a File object representing a writable folder
      * @param fileName the name of the Realm file
      * @return an instance of the Realm class
      * @throws RealmMigrationNeededException The model classes have been changed and the Realm
@@ -416,8 +416,8 @@ public final class Realm implements Closeable {
      */
     @Deprecated
     @SuppressWarnings("UnusedDeclaration")
-    public static Realm getInstance(File writeableFolder, String fileName) {
-        return create(new RealmConfiguration.Builder(writeableFolder)
+    public static Realm getInstance(File writableFolder, String fileName) {
+        return create(new RealmConfiguration.Builder(writableFolder)
                         .name(fileName)
                         .build()
         );
@@ -429,7 +429,7 @@ public final class Realm implements Closeable {
      * <p>
      * It sets auto-refresh on if the current thread has a Looper, off otherwise.
      *
-     * @param writeableFolder a File object representing a writeable folder
+     * @param writableFolder a File object representing a writable folder
      * @param key     a 64-byte encryption key
      * @return an instance of the Realm class
      * @throws RealmMigrationNeededException The model classes have been changed and the Realm
@@ -439,8 +439,8 @@ public final class Realm implements Closeable {
      */
     @Deprecated
     @SuppressWarnings("UnusedDeclaration")
-    public static Realm getInstance(File writeableFolder, byte[] key) {
-        return create(new RealmConfiguration.Builder(writeableFolder)
+    public static Realm getInstance(File writableFolder, byte[] key) {
+        return create(new RealmConfiguration.Builder(writableFolder)
                         .name(DEFAULT_REALM_NAME)
                         .encryptionKey(key)
                         .build()
@@ -453,7 +453,7 @@ public final class Realm implements Closeable {
      * <p>
      * It sets auto-refresh on if the current thread has a Looper, off otherwise.
      *
-     * @param writeableFolder a File object representing a writeable folder
+     * @param writableFolder a File object representing a writable folder
      * @param fileName the name of the Realm file
      * @param key     a 64-byte encryption key
      * @return an instance of the Realm class
@@ -464,8 +464,8 @@ public final class Realm implements Closeable {
      */
     @Deprecated
     @SuppressWarnings("UnusedDeclaration")
-    public static Realm getInstance(File writeableFolder, String fileName, byte[] key) {
-        return create(new RealmConfiguration.Builder(writeableFolder)
+    public static Realm getInstance(File writableFolder, String fileName, byte[] key) {
+        return create(new RealmConfiguration.Builder(writableFolder)
                         .name(fileName)
                         .encryptionKey(key)
                         .build()
@@ -519,7 +519,7 @@ public final class Realm implements Closeable {
     }
 
     /**
-     * Removes the current default configuration (if any). Any futher calls to {@link #getDefaultInstance()} will
+     * Removes the current default configuration (if any). Any further calls to {@link #getDefaultInstance()} will
      * fail until a new default configuration has been set using {@link #setDefaultConfiguration(RealmConfiguration)}.
      */
     public static void removeDefaultConfiguration() {
@@ -838,7 +838,7 @@ public final class Realm implements Closeable {
     }
 
     /**
-     * Create a Realm object prefilled with data from a JSON object. This must be done inside a
+     * Create a Realm object pre-filled with data from a JSON object. This must be done inside a
      * transaction. JSON properties with a null value will map to the default value for the data
      * type in Realm and unknown properties will be ignored.
      *
@@ -885,7 +885,7 @@ public final class Realm implements Closeable {
     }
 
     /**
-     * Create a Realm object prefilled with data from a JSON object. This must be done inside a
+     * Create a Realm object pre-filled with data from a JSON object. This must be done inside a
      * transaction. JSON properties with a null value will map to the default value for the data
      * type in Realm and unknown properties will be ignored.
      *
@@ -969,7 +969,7 @@ public final class Realm implements Closeable {
      * found a new object will be saved in the Realm. This must happen within a transaction.
      *
      * @param clazz Type of {@link io.realm.RealmObject} to create or update. It must have a primary key defined.
-     * @param in    Inputstream with object data in JSON format.
+     * @param in    {@link InputStream} with object data in JSON format.
      * @return Created or updated {@link io.realm.RealmObject}.
      * @throws java.lang.IllegalArgumentException if trying to update a class without a
      * {@link io.realm.annotations.PrimaryKey}.
@@ -1264,7 +1264,7 @@ public final class Realm implements Closeable {
      *
      * @param clazz the Class to get objects of.
      * @param sortAscending sort ascending if SORT_ORDER_ASCENDING, sort descending if SORT_ORDER_DESCENDING.
-     * @param fieldNames an array of fieldnames to sort objects by.
+     * @param fieldNames an array of field names to sort objects by.
      *        The objects are first sorted by fieldNames[0], then by fieldNames[1] and so forth.
      * @return A sorted RealmResults containing the objects.
      * @throws java.lang.IllegalArgumentException if a field name does not exist.
@@ -1356,7 +1356,7 @@ public final class Realm implements Closeable {
         return changeListeners;
     }
 
-    void sendNotifications() {
+    private void sendNotifications() {
         Iterator<WeakReference<RealmChangeListener>> iterator = changeListeners.iterator();
         List<WeakReference<RealmChangeListener>> toRemoveList = null;
         while (iterator.hasNext()) {
@@ -1552,7 +1552,7 @@ public final class Realm implements Closeable {
     private <E extends RealmObject> void checkHasPrimaryKey(E object) {
         Class<? extends RealmObject> objectClass = object.getClass();
         if (!getTable(objectClass).hasPrimaryKey()) {
-            throw new IllegalArgumentException("RealmObject has no @PrimaryKey defined: " + objectClass.getSimpleName().toString());
+            throw new IllegalArgumentException("RealmObject has no @PrimaryKey defined: " + objectClass.getSimpleName());
         }
     }
 
@@ -1834,9 +1834,6 @@ public final class Realm implements Closeable {
         }
     }
 
-
-
-
     /**
      * Encapsulates a Realm transaction.
      * <p>
@@ -1845,6 +1842,6 @@ public final class Realm implements Closeable {
      * instead of {@link #commitTransaction()}.
      */
     public interface Transaction {
-        public void execute(Realm realm);
+        void execute(Realm realm);
     }
 }
