@@ -91,6 +91,13 @@ public class LinkView {
         }
     }
 
+    /**
+     * Returns the Table which all links point to.
+     */
+    public Table getTable() {
+        return parent;
+    }
+
     private void checkImmutable() {
         if (parent.isImmutable()) {
             throw new IllegalStateException("Changing Realm data can only be done from inside a transaction.");
