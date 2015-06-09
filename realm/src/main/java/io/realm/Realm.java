@@ -624,7 +624,7 @@ public final class Realm implements Closeable {
             // Check schema versions are the same
             if (cachedConfiguration.getSchemaVersion() != newConfiguration.getSchemaVersion()) {
                 throw new IllegalArgumentException(String.format("Configurations cannot have different schema versions " +
-                                "if used to open the same file. %s vs. %s", cachedConfiguration.getSchemaVersion(),
+                                "if used to open the same file. %d vs. %d", cachedConfiguration.getSchemaVersion(),
                         newConfiguration.getSchemaVersion()));
             }
 
@@ -1844,4 +1844,5 @@ public final class Realm implements Closeable {
     public interface Transaction {
         void execute(Realm realm);
     }
+
 }
