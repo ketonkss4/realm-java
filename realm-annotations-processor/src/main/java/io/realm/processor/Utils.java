@@ -1,5 +1,6 @@
 package io.realm.processor;
 
+import java.lang.reflect.ParameterizedType;
 import java.util.List;
 
 import javax.annotation.processing.Messager;
@@ -86,7 +87,8 @@ public class Utils {
      * Returns the generic type for Lists of the form {@code List<type>}
      */
     public static String getGenericType(VariableElement field) {
-        List<? extends TypeMirror> typeArguments = ((DeclaredType) field.asType()).getTypeArguments();
+        TypeMirror fieldType = field.asType();
+        List<? extends TypeMirror> typeArguments = ((DeclaredType) fieldType).getTypeArguments();
         if (typeArguments.size() == 0) {
             return null;
         }
